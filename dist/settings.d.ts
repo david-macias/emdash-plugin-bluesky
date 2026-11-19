@@ -31,6 +31,10 @@ export interface BlueskySettings {
     showImages: boolean;
     /** Where the homepage feed renders (read by the site template). */
     position: FeedPosition;
+    /** Where the /posts feed renders (read by the archive template). */
+    postsPosition: FeedPosition;
+    /** Where the single-post feed renders (read by the post template). */
+    postPosition: FeedPosition;
 }
 export declare const DEFAULT_SETTINGS: BlueskySettings;
 export declare const SETTINGS_KEYS: (keyof BlueskySettings)[];

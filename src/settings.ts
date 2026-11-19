@@ -34,6 +34,10 @@ export interface BlueskySettings {
   showImages: boolean;
   /** Where the homepage feed renders (read by the site template). */
   position: FeedPosition;
+  /** Where the /posts feed renders (read by the archive template). */
+  postsPosition: FeedPosition;
+  /** Where the single-post feed renders (read by the post template). */
+  postPosition: FeedPosition;
 }
 
 export const DEFAULT_SETTINGS: BlueskySettings = {
@@ -45,6 +49,8 @@ export const DEFAULT_SETTINGS: BlueskySettings = {
   showCounts: true,
   showImages: true,
   position: "right",
+  postsPosition: "below",
+  postPosition: "right",
 };
 
 export const SETTINGS_KEYS = Object.keys(DEFAULT_SETTINGS) as (keyof BlueskySettings)[];
@@ -116,6 +122,30 @@ export const SETTINGS_SCHEMA: Record<string, SettingField> = {
     ],
     default: DEFAULT_SETTINGS.position,
   },
+  postsPosition: {
+    type: "select",
+    label: "Posts page feed position",
+    description:
+      "Where the feed appears on the /posts archive page. Read by the archive template on every render.",
+    options: [
+      { value: "left", label: "Left sidebar" },
+      { value: "right", label: "Right sidebar" },
+      { value: "below", label: "Below the posts" },
+    ],
+    default: DEFAULT_SETTINGS.postsPosition,
+  },
+  postPosition: {
+    type: "select",
+    label: "Single post feed position",
+    description:
+      "Where the feed appears on a single post page. Read by the post template on every render.",
+    options: [
+      { value: "left", label: "Left sidebar" },
+      { value: "right", label: "Right sidebar" },
+      { value: "below", label: "Below the post" },
+    ],
+    default: DEFAULT_SETTINGS.postPosition,
+  },
 };
 
 /**
@@ -150,7 +180,28 @@ export function readSettings(raw: Record<string, unknown> | null | undefined): B
     (FEED_POSITIONS as readonly string[]).includes(source.position)
       ? (source.position as FeedPosition)
       : DEFAULT_SETTINGS.position;
-  return { handle, postCount, includeReposts, filter, refreshMinutes, showCounts, showImages, position };
+  const postsPosition =
+    typeof source.postsPosition === "string" &&
+    (FEED_POSITIONS as readonly string[]).includes(source.postsPosition)
+      ? (source.postsPosition as FeedPosition)
+      : DEFAULT_SETTINGS.postsPosition;
+  const postPosition =
+    typeof source.postPosition === "string" &&
+    (FEED_POSITIONS as readonly string[]).includes(source.postPosition)
+      ? (source.postPosition as FeedPosition)
+      : DEFAULT_SETTINGS.postPosition;
+  return {
+    handle,
+    postCount,
+    includeReposts,
+    filter,
+    refreshMinutes,
+    showCounts,
+    showImages,
+    position,
+    postsPosition,
+    postPosition,
+  };
 }
 
 function clampNumber(value: unknown, min: number, max: number, fallback: number): number {

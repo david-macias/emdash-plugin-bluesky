@@ -21,6 +21,8 @@ export const DEFAULT_SETTINGS = {
     showCounts: true,
     showImages: true,
     position: "right",
+    postsPosition: "below",
+    postPosition: "right",
 };
 export const SETTINGS_KEYS = Object.keys(DEFAULT_SETTINGS);
 /** The admin settings form, rendered automatically by EmDash (keyed by setting name). */
@@ -88,6 +90,28 @@ export const SETTINGS_SCHEMA = {
         ],
         default: DEFAULT_SETTINGS.position,
     },
+    postsPosition: {
+        type: "select",
+        label: "Posts page feed position",
+        description: "Where the feed appears on the /posts archive page. Read by the archive template on every render.",
+        options: [
+            { value: "left", label: "Left sidebar" },
+            { value: "right", label: "Right sidebar" },
+            { value: "below", label: "Below the posts" },
+        ],
+        default: DEFAULT_SETTINGS.postsPosition,
+    },
+    postPosition: {
+        type: "select",
+        label: "Single post feed position",
+        description: "Where the feed appears on a single post page. Read by the post template on every render.",
+        options: [
+            { value: "left", label: "Left sidebar" },
+            { value: "right", label: "Right sidebar" },
+            { value: "below", label: "Below the post" },
+        ],
+        default: DEFAULT_SETTINGS.postPosition,
+    },
 };
 /**
  * Read settings defensively: any missing, null, or wrong-typed value falls
@@ -111,7 +135,26 @@ export function readSettings(raw) {
         FEED_POSITIONS.includes(source.position)
         ? source.position
         : DEFAULT_SETTINGS.position;
-    return { handle, postCount, includeReposts, filter, refreshMinutes, showCounts, showImages, position };
+    const postsPosition = typeof source.postsPosition === "string" &&
+        FEED_POSITIONS.includes(source.postsPosition)
+        ? source.postsPosition
+        : DEFAULT_SETTINGS.postsPosition;
+    const postPosition = typeof source.postPosition === "string" &&
+        FEED_POSITIONS.includes(source.postPosition)
+        ? source.postPosition
+        : DEFAULT_SETTINGS.postPosition;
+    return {
+        handle,
+        postCount,
+        includeReposts,
+        filter,
+        refreshMinutes,
+        showCounts,
+        showImages,
+        position,
+        postsPosition,
+        postPosition,
+    };
 }
 function clampNumber(value, min, max, fallback) {
     const n = typeof value === "number" && Number.isFinite(value) ? Math.floor(value) : fallback;

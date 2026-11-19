@@ -2,7 +2,7 @@
 
 Show a Bluesky feed or a single Bluesky post on an [EmDash](https://emdashcms.com) site. Native EmDash plugin, no API key needed: it reads the Bluesky public API (no auth) and caches the result, so a Bluesky outage can never break a page.
 
-> Status: v1.0.2. Built for EmDash 1.5.x. Screenshots: TBD (see below).
+> Status: v1.0.3. Built for EmDash 1.5.x. Screenshots: TBD (see below).
 
 ## Install
 
@@ -40,6 +40,8 @@ Then set the handle in the admin: **Settings → Plugins → Bluesky → Bluesky
 | Show counts | on | Like / repost / reply counts on each card. |
 | Show images | on | Images attached to posts. |
 | Feed position | Right sidebar | Where the feed appears on the homepage: left sidebar, right sidebar, or below the posts. Read by the site template on every render, so changing it takes effect immediately (no redeploy). |
+| Posts page feed position | Below the posts | Where the feed appears on the /posts archive page. |
+| Single post feed position | Right sidebar | Where the feed appears on a single post page. |
 
 Schema defaults fill the admin form, but EmDash does not write them to the settings store on install; the plugin seeds them on `plugin:install` and applies defaults defensively on every read, so a fresh install works before the form is ever saved.
 

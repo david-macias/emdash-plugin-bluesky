@@ -128,6 +128,8 @@ describe("getFeed (stale-while-revalidate)", () => {
     expect(feed.stale).toBe(false);
     expect(feed.posts).toHaveLength(1);
     expect(feed.position).toBe("right");
+    expect(feed.postsPosition).toBe("below");
+    expect(feed.postPosition).toBe("right");
     expect(ctx.fetchCalls).toHaveLength(0);
   });
 
@@ -141,12 +143,14 @@ describe("getFeed (stale-while-revalidate)", () => {
       posts: [{ uri: "at://a", text: "a" }],
     };
     const ctx = makeCtx({
-      settings: { handle: HANDLE, position: "left" },
+      settings: { handle: HANDLE, position: "left", postsPosition: "right", postPosition: "below" },
       kv: { "cache:feed": cached },
       fetchImpl: blueskyFetch(),
     });
     const feed = await getFeed(ctx, 5);
     expect(feed.position).toBe("left");
+    expect(feed.postsPosition).toBe("right");
+    expect(feed.postPosition).toBe("below");
   });
 
   it("refreshes inline when the cache is stale, then serves the new data", async () => {

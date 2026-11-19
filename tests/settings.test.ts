@@ -12,6 +12,8 @@ describe("readSettings", () => {
       showCounts: true,
       showImages: true,
       position: "right",
+      postsPosition: "below",
+      postPosition: "right",
     });
     expect(readSettings({})).toEqual(readSettings(null));
   });
@@ -35,6 +37,8 @@ describe("readSettings", () => {
       showCounts: false,
       showImages: false,
       position: "right",
+      postsPosition: "below",
+      postPosition: "right",
     });
   });
 
@@ -51,6 +55,15 @@ describe("readSettings", () => {
     expect(readSettings({ position: "below" }).position).toBe("below");
     expect(readSettings({ position: "top" }).position).toBe("right");
     expect(readSettings({ position: 42 }).position).toBe("right");
+  });
+
+  it("defaults the per-page positions and rejects unknown values", () => {
+    expect(readSettings({}).postsPosition).toBe("below");
+    expect(readSettings({}).postPosition).toBe("right");
+    expect(readSettings({ postsPosition: "left" }).postsPosition).toBe("left");
+    expect(readSettings({ postPosition: "below" }).postPosition).toBe("below");
+    expect(readSettings({ postsPosition: "top" }).postsPosition).toBe("below");
+    expect(readSettings({ postPosition: 42 }).postPosition).toBe("right");
   });
 
   it("clamps numbers and falls back on wrong types or bad filters", () => {

@@ -19,7 +19,7 @@ import { cronExpressionFor, readSettings } from "./settings.js";
 /** Read all settings keys (missing keys fall back to defaults). */
 export async function loadSettings(ctx) {
     const raw = {};
-    for (const key of ["handle", "postCount", "includeReposts", "filter", "refreshMinutes", "showCounts", "showImages", "position"]) {
+    for (const key of ["handle", "postCount", "includeReposts", "filter", "refreshMinutes", "showCounts", "showImages", "position", "postsPosition", "postPosition"]) {
         try {
             raw[key] = await ctx.settings.get(key);
         }
@@ -161,6 +161,8 @@ export async function getFeed(ctx, limit) {
             fetchedAt: null,
             stale: true,
             position: settings.position,
+            postsPosition: settings.postsPosition,
+            postPosition: settings.postPosition,
             posts: [],
         };
     }
@@ -176,6 +178,8 @@ export async function getFeed(ctx, limit) {
         fetchedAt: cached.fetchedAt,
         stale,
         position: settings.position,
+        postsPosition: settings.postsPosition,
+        postPosition: settings.postPosition,
         posts,
     };
 }

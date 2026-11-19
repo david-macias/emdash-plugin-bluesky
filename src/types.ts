@@ -66,6 +66,10 @@ export interface FeedResponse {
   stale: boolean;
   /** The configured homepage position; the template renders from this. */
   position: FeedPosition;
+  /** The configured /posts position; the archive template renders from this. */
+  postsPosition: FeedPosition;
+  /** The configured single-post position; the post template renders from this. */
+  postPosition: FeedPosition;
   posts: NormalizedPost[];
 }
 

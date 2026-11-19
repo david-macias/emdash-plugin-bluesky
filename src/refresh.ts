@@ -64,7 +64,7 @@ export interface RefreshResult {
 /** Read all settings keys (missing keys fall back to defaults). */
 export async function loadSettings(ctx: RefreshContext): Promise<BlueskySettings> {
   const raw: Record<string, unknown> = {};
-  for (const key of ["handle", "postCount", "includeReposts", "filter", "refreshMinutes", "showCounts", "showImages", "position"]) {
+  for (const key of ["handle", "postCount", "includeReposts", "filter", "refreshMinutes", "showCounts", "showImages", "position", "postsPosition", "postPosition"]) {
     try {
       raw[key] = await ctx.settings.get(key);
     } catch {
@@ -205,6 +205,8 @@ export async function getFeed(ctx: RefreshContext, limit: number): Promise<FeedR
       fetchedAt: null,
       stale: true,
       position: settings.position,
+      postsPosition: settings.postsPosition,
+      postPosition: settings.postPosition,
       posts: [],
     };
   }
@@ -222,6 +224,8 @@ export async function getFeed(ctx: RefreshContext, limit: number): Promise<FeedR
     fetchedAt: cached.fetchedAt,
     stale,
     position: settings.position,
+    postsPosition: settings.postsPosition,
+    postPosition: settings.postPosition,
     posts,
   };
 }
