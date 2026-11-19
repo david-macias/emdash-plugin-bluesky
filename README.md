@@ -111,7 +111,7 @@ The unit tests run against a small `definePlugin` stub (the real `emdash` entry 
 ![Bluesky feed in the right sidebar](https://raw.githubusercontent.com/david-macias/emdash-plugin-bluesky/main/docs/screenshots/FeedSideBar.png)
 
 
-![Bluesky feed in botton of page](https://raw.githubusercontent.com/david-macias/emdash-plugin-bluesky/main/docs/screenshots/FeedFooter.png)
+![Bluesky feed in bottom of page](https://raw.githubusercontent.com/david-macias/emdash-plugin-bluesky/main/docs/screenshots/FeedFooter.png)
 
 ## v1 limits
 
