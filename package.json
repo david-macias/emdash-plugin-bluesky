@@ -1,0 +1,62 @@
+{
+  "name": "emdash-plugin-bluesky",
+  "version": "1.0.0",
+  "description": "Show a Bluesky feed or a single Bluesky post on an EmDash site. Native EmDash plugin, no API key needed.",
+  "type": "module",
+  "license": "MIT",
+  "author": "David Macias",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/david-macias/emdash-plugin-bluesky"
+  },
+  "homepage": "https://dmacias.org/",
+  "keywords": [
+    "emdash",
+    "emdash-plugin",
+    "bluesky",
+    "atproto",
+    "social",
+    "feed"
+  ],
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "default": "./dist/index.js"
+    },
+    "./astro": {
+      "types": "./dist/astro/index.d.ts",
+      "import": "./dist/astro/index.js",
+      "default": "./dist/astro/index.js"
+    },
+    "./types": {
+      "types": "./dist/types.d.ts"
+    }
+  },
+  "files": [
+    "dist",
+    "astro",
+    "README.md",
+    "LICENSE",
+    "icon.svg"
+  ],
+  "scripts": {
+    "build": "tsc",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "test:live": "BLUESKY_LIVE=1 vitest run tests/live.test.ts",
+    "test:watch": "vitest",
+    "smoke": "node scripts/smoke.mjs"
+  },
+  "peerDependencies": {
+    "emdash": "1.5.x"
+  },
+  "devDependencies": {
+    "@types/node": "^24.0.0",
+    "emdash": "1.5.0",
+    "typescript": "^5.9.0",
+    "vitest": "^4.0.0"
+  }
+}

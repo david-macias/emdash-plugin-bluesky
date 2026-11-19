@@ -1,0 +1,112 @@
+---
+/**
+ * BlueskyFeed — the feed block component AND the homepage component.
+ *
+ * Two ways to use it:
+ * - As a Portable Text block (`bluesky-feed`) in the editor: the block's
+ *   `count` field overrides how many posts show. The block arrives as
+ *   `Astro.props.node` with the stored block data.
+ * - Directly in a site template: `<BlueskyFeed count={5} />`.
+ *
+ * Data comes from the plugin's public `feed` route via the SSR dispatcher
+ * (`getPublicPluginApiRouteHandler`), which reads the KV cache — the
+ * component never calls Bluesky directly. Any failure (no handler, route
+ * error, empty feed) renders nothing, so the feed can never break a page.
+ */
+import { getPublicPluginApiRouteHandler } from "emdash/plugin-utils";
+import type { FeedResponse } from "emdash-plugin-bluesky/types";
+import BlueskyCard from "./BlueskyCard.astro";
+
+interface Props {
+  /** Portable Text block node (present when rendered from editor content). */
+  node?: { data?: { count?: number | string } };
+  /** Direct-use override for how many posts to show. Wins over node data. */
+  count?: number;
+  /** Section heading. Pass "" to suppress it. */
+  title?: string;
+  showCounts?: boolean;
+  showImages?: boolean;
+}
+
+const {
+  node,
+  count: countProp,
+  title = "On Bluesky",
+  showCounts = true,
+  showImages = true,
+} = Astro.props;
+
+const blockCount = node?.data?.count;
+const count =
+  countProp ??
+  (typeof blockCount === "number"
+    ? blockCount
+    : typeof blockCount === "string"
+      ? Number(blockCount)
+      : undefined);
+
+let feed: FeedResponse | null = null;
+try {
+  const handler = getPublicPluginApiRouteHandler(Astro.locals);
+  if (handler) {
+    const url = new URL("/_emdash/api/plugins/emdash-plugin-bluesky/feed", Astro.url.origin);
+    if (typeof count === "number" && Number.isFinite(count)) {
+      url.searchParams.set("limit", String(Math.max(1, Math.min(25, Math.floor(count)))));
+    }
+    const result = await handler("emdash-plugin-bluesky", "GET", "feed", new Request(url));
+    if (result.success && result.data && typeof result.data === "object") {
+      const data = result.data as FeedResponse;
+      if (Array.isArray(data.posts)) feed = data;
+    }
+  }
+} catch {
+  // Never break the page for a feed problem.
+  feed = null;
+}
+
+const posts = feed?.posts ?? [];
+---
+
+{
+  posts.length > 0 && feed && (
+    <section class="bsky-feed" aria-label="Bluesky feed">
+      {title && <h2 class="bsky-feed-title">{title}</h2>}
+      <p class="bsky-feed-profile">
+        <a
+          href={`https://bsky.app/profile/${encodeURIComponent(feed.handle)}`}
+          target="_blank"
+          rel="noopener noreferrer"
+        >
+          @{feed.handle} on Bluesky
+        </a>
+      </p>
+      <div class="bsky-feed-list">
+        {posts.map((post) => (
+          <BlueskyCard post={post} showCounts={showCounts} showImages={showImages} />
+        ))}
+      </div>
+    </section>
+  )
+}
+
+<style>
+  .bsky-feed {
+    margin: 0;
+  }
+  .bsky-feed-title {
+    font-family: var(--font-heading, Georgia, "Times New Roman", serif);
+    font-size: 1.5rem;
+    line-height: 1.2;
+    margin: 0 0 0.25rem;
+  }
+  .bsky-feed-profile {
+    margin: 0 0 1rem;
+    font-size: 0.875rem;
+    opacity: 0.8;
+  }
+  .bsky-feed-list {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+  }
+</style>

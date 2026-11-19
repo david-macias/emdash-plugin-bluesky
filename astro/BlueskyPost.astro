@@ -1,0 +1,62 @@
+---
+/**
+ * BlueskyPost — the single-post block component.
+ *
+ * Two ways to use it:
+ * - As a Portable Text block (`bluesky-post`) in the editor: the block's
+ *   `id` field holds the post URL. The block arrives as `Astro.props.node`.
+ * - Directly in a site template: `<BlueskyPost url="https://bsky.app/..." />`.
+ *
+ * Data comes from the plugin's public `post` route via the SSR dispatcher,
+ * which resolves the URL to a cached normalized post. Any failure (bad
+ * URL, deleted post, route error) renders nothing.
+ */
+import { getPublicPluginApiRouteHandler } from "emdash/plugin-utils";
+import type { NormalizedPost, SinglePostResponse } from "emdash-plugin-bluesky/types";
+import BlueskyCard from "./BlueskyCard.astro";
+
+interface Props {
+  /** Portable Text block node (present when rendered from editor content). */
+  node?: { data?: { id?: string } };
+  /** Direct-use post URL. Wins over node data. */
+  url?: string;
+  showCounts?: boolean;
+  showImages?: boolean;
+}
+
+const { node, url: urlProp, showCounts = true, showImages = true } = Astro.props;
+const url = urlProp ?? node?.data?.id;
+
+let post: NormalizedPost | null = null;
+if (typeof url === "string" && url.trim()) {
+  try {
+    const handler = getPublicPluginApiRouteHandler(Astro.locals);
+    if (handler) {
+      const reqUrl = new URL("/_emdash/api/plugins/emdash-plugin-bluesky/post", Astro.url.origin);
+      reqUrl.searchParams.set("url", url.trim());
+      const result = await handler("emdash-plugin-bluesky", "GET", "post", new Request(reqUrl));
+      if (result.success && result.data && typeof result.data === "object") {
+        const data = result.data as SinglePostResponse;
+        if (data.post) post = data.post;
+      }
+    }
+  } catch {
+    // Never break the page for a single embed.
+    post = null;
+  }
+}
+---
+
+{
+  post && (
+    <div class="bsky-single">
+      <BlueskyCard post={post} showCounts={showCounts} showImages={showImages} />
+    </div>
+  )
+}
+
+<style>
+  .bsky-single {
+    margin: 0;
+  }
+</style>

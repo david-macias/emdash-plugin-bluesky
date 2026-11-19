@@ -1,0 +1,1 @@
+{"version":3,"file":"index.js","sourceRoot":"","sources":["../../src/astro/index.ts"],"names":[],"mappings":"AAAA;;;;;;;;;;;;;;;GAeG;AAEH,OAAO,WAAW,MAAM,+BAA+B,CAAC;AACxD,OAAO,WAAW,MAAM,+BAA+B,CAAC;AAExD,OAAO,EAAE,WAAW,EAAE,WAAW,EAAE,CAAC;AAEpC,MAAM,CAAC,MAAM,eAAe,GAAG;IAC7B,cAAc,EAAE,WAAW;IAC3B,cAAc,EAAE,WAAW;CAC5B,CAAC"}
