@@ -108,7 +108,6 @@ The unit tests run against a small `definePlugin` stub (the real `emdash` entry 
 
 ## Screenshots
 
-TBD — add editor and front-end screenshots here before publishing.
 ![Bluesky feed in the right sidebar](https://raw.githubusercontent.com/david-macias/emdash-plugin-bluesky/main/docs/screenshots/FeedSideBar.png)
 
 
