@@ -7,11 +7,14 @@ import { describe, expect, it } from "vitest";
 import {
   linkifyText,
   normalizeFeedItem,
+  normalizeHandle,
   normalizePostView,
   parsePostUrl,
   postUrl,
+  resolveHandle,
   rkeyFromUri,
 } from "../src/bluesky.js";
+import { jsonResponse } from "./helpers.js";
 
 const fixture = JSON.parse(readFileSync(new URL("./fixtures/dmacias-bsky.json", import.meta.url), "utf-8")) as {
   feed: unknown[];
@@ -234,5 +237,30 @@ describe("post URLs", () => {
     expect(parsePostUrl("https://example.com/profile/x/post/y")).toBeNull();
     expect(parsePostUrl("https://bsky.app/profile/x")).toBeNull();
     expect(parsePostUrl("not a url")).toBeNull();
+  });
+});
+
+describe("normalizeHandle", () => {
+  it("strips leading @s and trims whitespace", () => {
+    expect(normalizeHandle("@dmacias.bsky.social")).toBe("dmacias.bsky.social");
+    expect(normalizeHandle("@@dmacias.bsky.social")).toBe("dmacias.bsky.social");
+    expect(normalizeHandle("  @dmacias.bsky.social ")).toBe("dmacias.bsky.social");
+    expect(normalizeHandle("dmacias.bsky.social")).toBe("dmacias.bsky.social");
+    expect(normalizeHandle("@")).toBe("");
+  });
+});
+
+describe("resolveHandle", () => {
+  it("calls the API with the bare handle even when given a leading @", async () => {
+    const seen: string[] = [];
+    const fetchImpl = async (url: string) => {
+      seen.push(url);
+      return jsonResponse({ did: "did:plc:test" });
+    };
+    const did = await resolveHandle(fetchImpl, "@dmacias.bsky.social");
+    expect(did).toBe("did:plc:test");
+    expect(seen).toHaveLength(1);
+    expect(seen[0]).toContain("handle=dmacias.bsky.social");
+    expect(seen[0]).not.toContain("%40");
   });
 });

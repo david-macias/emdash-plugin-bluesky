@@ -20,6 +20,12 @@ export declare class BlueskyError extends Error {
     readonly status?: number;
     constructor(message: string, status?: number);
 }
+/**
+ * Normalize a handle as typed by a human: trim whitespace and strip a
+ * leading @ (or several). Bluesky's resolveHandle rejects "@handle" with
+ * InvalidRequest, so this must happen before any API call.
+ */
+export declare function normalizeHandle(handle: string): string;
 /** Resolve a handle (e.g. dmacias.bsky.social) to its DID. */
 export declare function resolveHandle(fetchImpl: FetchImpl, handle: string): Promise<string>;
 /** Fetch an author's feed. Returns the raw `feed` array (un-normalized). */

@@ -12,7 +12,7 @@
  */
 
 import type { SettingField } from "emdash";
-import { FEED_FILTERS, type FeedFilter } from "./bluesky.js";
+import { FEED_FILTERS, normalizeHandle, type FeedFilter } from "./bluesky.js";
 
 export interface BlueskySettings {
   /** Bluesky handle to show, e.g. dmacias.bsky.social. Empty = disabled. */
@@ -49,7 +49,7 @@ export const SETTINGS_SCHEMA: Record<string, SettingField> = {
     type: "string",
     label: "Bluesky handle",
     description:
-      "The account whose posts are shown, e.g. dmacias.bsky.social. Leave empty to disable the feed.",
+      "The account whose posts are shown, e.g. dmacias.bsky.social. A leading @ is ignored. Leave empty to disable the feed.",
   },
   postCount: {
     type: "number",
@@ -107,7 +107,7 @@ export const SETTINGS_SCHEMA: Record<string, SettingField> = {
  */
 export function readSettings(raw: Record<string, unknown> | null | undefined): BlueskySettings {
   const source = raw ?? {};
-  const handle = typeof source.handle === "string" ? source.handle.trim() : "";
+  const handle = typeof source.handle === "string" ? normalizeHandle(source.handle) : "";
   const postCount = clampNumber(source.postCount, 1, 20, DEFAULT_SETTINGS.postCount);
   const includeReposts =
     typeof source.includeReposts === "boolean"

@@ -61,12 +61,22 @@ async function fetchJson(fetchImpl: FetchImpl, url: string): Promise<unknown> {
   return (await response.json()) as unknown;
 }
 
+/**
+ * Normalize a handle as typed by a human: trim whitespace and strip a
+ * leading @ (or several). Bluesky's resolveHandle rejects "@handle" with
+ * InvalidRequest, so this must happen before any API call.
+ */
+export function normalizeHandle(handle: string): string {
+  return handle.trim().replace(/^@+/, "");
+}
+
 /** Resolve a handle (e.g. dmacias.bsky.social) to its DID. */
 export async function resolveHandle(fetchImpl: FetchImpl, handle: string): Promise<string> {
-  const url = `${BLUESKY_API_BASE}/com.atproto.identity.resolveHandle?handle=${encodeURIComponent(handle)}`;
+  const clean = normalizeHandle(handle);
+  const url = `${BLUESKY_API_BASE}/com.atproto.identity.resolveHandle?handle=${encodeURIComponent(clean)}`;
   const data = await fetchJson(fetchImpl, url);
   if (!isRecord(data) || typeof data.did !== "string" || !data.did.startsWith("did:")) {
-    throw new BlueskyError(`resolveHandle returned no DID for ${handle}`);
+    throw new BlueskyError(`resolveHandle returned no DID for ${clean}`);
   }
   return data.did;
 }

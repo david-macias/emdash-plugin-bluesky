@@ -36,6 +36,13 @@ describe("readSettings", () => {
     });
   });
 
+  it("strips a leading @ from the handle", () => {
+    expect(readSettings({ handle: "@dmacias.bsky.social" }).handle).toBe("dmacias.bsky.social");
+    expect(readSettings({ handle: "@@dmacias.bsky.social" }).handle).toBe("dmacias.bsky.social");
+    expect(readSettings({ handle: "  @dmacias.bsky.social " }).handle).toBe("dmacias.bsky.social");
+    expect(readSettings({ handle: "@" }).handle).toBe("");
+  });
+
   it("clamps numbers and falls back on wrong types or bad filters", () => {
     const settings = readSettings({
       handle: 42,

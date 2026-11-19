@@ -10,7 +10,7 @@
  * `plugin:install` also seeds the defaults into the store (see plugin.ts),
  * but the reader stays defensive either way.
  */
-import { FEED_FILTERS } from "./bluesky.js";
+import { FEED_FILTERS, normalizeHandle } from "./bluesky.js";
 export const DEFAULT_SETTINGS = {
     handle: "",
     postCount: 5,
@@ -26,7 +26,7 @@ export const SETTINGS_SCHEMA = {
     handle: {
         type: "string",
         label: "Bluesky handle",
-        description: "The account whose posts are shown, e.g. dmacias.bsky.social. Leave empty to disable the feed.",
+        description: "The account whose posts are shown, e.g. dmacias.bsky.social. A leading @ is ignored. Leave empty to disable the feed.",
     },
     postCount: {
         type: "number",
@@ -83,7 +83,7 @@ export const SETTINGS_SCHEMA = {
  */
 export function readSettings(raw) {
     const source = raw ?? {};
-    const handle = typeof source.handle === "string" ? source.handle.trim() : "";
+    const handle = typeof source.handle === "string" ? normalizeHandle(source.handle) : "";
     const postCount = clampNumber(source.postCount, 1, 20, DEFAULT_SETTINGS.postCount);
     const includeReposts = typeof source.includeReposts === "boolean"
         ? source.includeReposts
