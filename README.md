@@ -41,7 +41,7 @@ Then set the handle in the admin: **Settings → Plugins → Bluesky → Bluesky
 | Show images | on | Images attached to posts. |
 | Feed position | Right sidebar | Where the feed appears on the homepage: left sidebar, right sidebar, or below the posts. Read by the site template on every render, so changing it takes effect immediately (no redeploy). |
 | Posts page feed position | Below the posts | Where the feed appears on the /posts archive page. |
-| Single post feed position | Right sidebar | Where the feed appears on a single post page. |
+| Single post feed position | Below the post | Where the feed appears on a single post page. |
 
 Schema defaults fill the admin form, but EmDash does not write them to the settings store on install; the plugin seeds them on `plugin:install` and applies defaults defensively on every read, so a fresh install works before the form is ever saved.
 

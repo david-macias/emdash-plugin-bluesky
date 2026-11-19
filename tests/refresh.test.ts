@@ -129,7 +129,7 @@ describe("getFeed (stale-while-revalidate)", () => {
     expect(feed.posts).toHaveLength(1);
     expect(feed.position).toBe("right");
     expect(feed.postsPosition).toBe("below");
-    expect(feed.postPosition).toBe("right");
+    expect(feed.postPosition).toBe("below");
     expect(ctx.fetchCalls).toHaveLength(0);
   });
 

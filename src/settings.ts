@@ -50,7 +50,7 @@ export const DEFAULT_SETTINGS: BlueskySettings = {
   showImages: true,
   position: "right",
   postsPosition: "below",
-  postPosition: "right",
+  postPosition: "below",
 };
 
 export const SETTINGS_KEYS = Object.keys(DEFAULT_SETTINGS) as (keyof BlueskySettings)[];
