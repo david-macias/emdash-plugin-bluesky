@@ -2,7 +2,7 @@
 
 Show a Bluesky feed or a single Bluesky post on an [EmDash](https://emdashcms.com) site. Native EmDash plugin, no API key needed: it reads the Bluesky public API (no auth) and caches the result, so a Bluesky outage can never break a page.
 
-> Status: v1.0.3. Built for EmDash 1.5.x. Screenshots: TBD (see below).
+> Status: v1.0.3. Built for EmDash 1.5.x. 
 
 ## Install
 
@@ -109,6 +109,10 @@ The unit tests run against a small `definePlugin` stub (the real `emdash` entry 
 ## Screenshots
 
 TBD — add editor and front-end screenshots here before publishing.
+![Bluesky feed in the right sidebar](https://raw.githubusercontent.com/david-macias/emdash-plugin-bluesky/main/docs/screenshots/FeedSideBar.png)
+
+
+![Bluesky feed in botton of page](https://raw.githubusercontent.com/david-macias/emdash-plugin-bluesky/main/docs/screenshots/FeedFooter.png)
 
 ## v1 limits
 
@@ -119,6 +123,7 @@ TBD — add editor and front-end screenshots here before publishing.
 
 ## Changelog
 
+- **1.0.6** — Added screenshots to README.
 - **1.0.5** — Security and robustness: only http(s) URLs are rendered as links, link cards, images, or avatars (a `javascript:` URI from a reposted or quoted post can no longer become a link on your site); the public single-post endpoint rejects malformed handles and post IDs before any network call, and cached handle lookups expire after 7 days; Bluesky requests time out after 3 seconds, and a failed feed refresh backs off for 60 seconds instead of retrying on every page render.
 - **1.0.4** — Single-post feed defaults to below the article.
 - **1.0.3** — Per-page feed positions (home, posts list, single post).
