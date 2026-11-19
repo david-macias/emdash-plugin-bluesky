@@ -66,6 +66,20 @@ describe("refreshFeed", () => {
     expect(ctx.fetchCalls[0]).toContain("getAuthorFeed");
   });
 
+  it("re-resolves the DID when the cached entry is older than 7 days", async () => {
+    const old = new Date(Date.now() - 8 * 24 * 60 * 60_000).toISOString();
+    const ctx = makeCtx({
+      settings,
+      kv: { [`cache:did:${HANDLE}`]: { handle: HANDLE, did: "did:plc:stale", resolvedAt: old } },
+      fetchImpl: blueskyFetch(),
+    });
+    const result = await refreshFeed(ctx);
+    expect(result.ok).toBe(true);
+    expect(ctx.fetchCalls).toHaveLength(2);
+    expect(ctx.fetchCalls[0]).toContain("resolveHandle");
+    expect(ctx.fetchCalls[1]).toContain("getAuthorFeed");
+  });
+
   it("re-resolves the DID once after a 400, then retries", async () => {
     let calls = 0;
     const flaky: FetchImpl = async (url: string) => {
@@ -102,6 +116,15 @@ describe("refreshFeed", () => {
     expect(result.ok).toBe(false);
     expect(result.reason).toBe("fetch-failed");
     expect(ctx.kvStore.get("cache:feed")).toEqual(oldCache);
+  });
+
+  it("records the failure so the next inline read backs off", async () => {
+    const ctx = makeCtx({ settings, fetchImpl: async () => jsonResponse({ error: "boom" }, 500) });
+    const result = await refreshFeed(ctx);
+    expect(result.ok).toBe(false);
+    const marker = ctx.kvStore.get("cache:feed:lastFailure") as { failedAt: string } | undefined;
+    expect(marker?.failedAt).toBeTruthy();
+    expect(Date.parse(marker!.failedAt)).not.toBeNaN();
   });
 
   it("returns no-handle without fetching when no handle is configured", async () => {
@@ -186,6 +209,52 @@ describe("getFeed (stale-while-revalidate)", () => {
     const feed = await getFeed(ctx, 5);
     expect(feed.stale).toBe(true);
     expect(feed.posts).toHaveLength(1);
+  });
+
+  it("skips the inline refresh when a refresh failed within the last minute", async () => {
+    const stale = {
+      version: 1,
+      handle: HANDLE,
+      did: DID,
+      filter: "posts_no_replies",
+      fetchedAt: new Date(Date.now() - 60 * 60_000).toISOString(),
+      posts: [{ uri: "at://a", text: "a", segments: [{ text: "a" }] }],
+    };
+    const ctx = makeCtx({
+      settings,
+      kv: {
+        "cache:feed": stale,
+        "cache:feed:lastFailure": { failedAt: new Date().toISOString() },
+      },
+      fetchImpl: blueskyFetch(),
+    });
+    const feed = await getFeed(ctx, 5);
+    expect(feed.stale).toBe(true);
+    expect(feed.posts).toHaveLength(1);
+    expect(ctx.fetchCalls).toHaveLength(0);
+  });
+
+  it("refreshes inline again once the failure backoff has passed", async () => {
+    const stale = {
+      version: 1,
+      handle: HANDLE,
+      did: DID,
+      filter: "posts_no_replies",
+      fetchedAt: new Date(Date.now() - 60 * 60_000).toISOString(),
+      posts: [],
+    };
+    const ctx = makeCtx({
+      settings,
+      kv: {
+        "cache:feed": stale,
+        "cache:feed:lastFailure": { failedAt: new Date(Date.now() - 2 * 60_000).toISOString() },
+      },
+      fetchImpl: blueskyFetch(),
+    });
+    const feed = await getFeed(ctx, 5);
+    expect(feed.stale).toBe(false);
+    expect(feed.posts).toHaveLength(5);
+    expect(ctx.fetchCalls.length).toBeGreaterThan(0);
   });
 
   it("returns an empty feed (not an error) when there is no cache and the fetch fails", async () => {

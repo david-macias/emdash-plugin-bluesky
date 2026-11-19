@@ -1,6 +1,6 @@
 {
   "name": "emdash-plugin-bluesky",
-  "version": "1.0.4",
+  "version": "1.0.5",
   "description": "Show a Bluesky feed or a single Bluesky post on an EmDash site. Native EmDash plugin, no API key needed.",
   "type": "module",
   "license": "MIT",

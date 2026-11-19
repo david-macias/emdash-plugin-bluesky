@@ -11,7 +11,7 @@
  * - app.bsky.feed.getAuthorFeed?actor=&filter=&limit= -> { feed: [...] }
  * - app.bsky.feed.getPosts?uris[]= -> { posts: [...] }
  */
-import { BLUESKY_API_BASE, BSKY_APP_BASE } from "./constants.js";
+import { BLUESKY_API_BASE, BSKY_APP_BASE, FETCH_TIMEOUT_MS } from "./constants.js";
 /** Feed filters accepted by getAuthorFeed. */
 export const FEED_FILTERS = [
     "posts_with_replies",
@@ -31,7 +31,10 @@ export class BlueskyError extends Error {
 async function fetchJson(fetchImpl, url) {
     let response;
     try {
-        response = await fetchImpl(url, { headers: { accept: "application/json" } });
+        response = await fetchImpl(url, {
+            headers: { accept: "application/json" },
+            signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
+        });
     }
     catch (cause) {
         throw new BlueskyError(`Bluesky request failed: ${cause instanceof Error ? cause.message : String(cause)}`);
@@ -92,6 +95,41 @@ function asCount(value) {
     return typeof value === "number" && Number.isFinite(value) ? value : 0;
 }
 /**
+ * Only http(s) URLs are safe to render as links or media. Anything else
+ * (notably `javascript:`) is dropped. Bluesky's API only checks that a URI
+ * is well-formed, and `javascript:alert(1)` is one, so author-controlled
+ * URIs must be allowlisted here before they reach an <a href> or <img src>.
+ */
+function isSafeHttpUrl(value) {
+    if (!value)
+        return false;
+    let parsed;
+    try {
+        parsed = new URL(value.trim());
+    }
+    catch {
+        return false;
+    }
+    return parsed.protocol === "http:" || parsed.protocol === "https:";
+}
+/** The URL when it is a safe http(s) URL, otherwise undefined. */
+function safeHttpUrl(value) {
+    return isSafeHttpUrl(value) ? value : undefined;
+}
+/** A post record key (TID): 13 chars from the base32-sortable alphabet. */
+const TID_RE = /^[2-7a-z]{13}$/;
+/** A Bluesky handle is a domain name: dot-separated labels. */
+const HANDLE_RE = /^[a-zA-Z0-9]([a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(\.[a-zA-Z0-9]([a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$/;
+/** A DID: `did:<method>:<method-specific-id>`. */
+const DID_RE = /^did:[a-z0-9]+:[a-zA-Z0-9._:%-]+$/;
+function isValidHandleOrDid(value) {
+    if (value.length > 253)
+        return false;
+    if (value.startsWith("did:"))
+        return DID_RE.test(value);
+    return HANDLE_RE.test(value);
+}
+/**
  * Extract the rkey from an AT URI like
  * at://did:plc:…/app.bsky.feed.post/<rkey>.
  */
@@ -124,7 +162,14 @@ export function parsePostUrl(url) {
     const match = parsed.pathname.match(/^\/profile\/([^/]+)\/post\/([^/]+)\/?$/);
     if (!match)
         return null;
-    return { handleOrDid: decodeURIComponent(match[1]), rkey: match[2] };
+    const handleOrDid = decodeURIComponent(match[1]);
+    const rkey = match[2];
+    // Reject malformed input before any network call: the rkey must be a
+    // 13-char TID and the handle/DID must have valid syntax. This keeps the
+    // public post endpoint from being used to trigger lookups for junk.
+    if (!isValidHandleOrDid(handleOrDid) || !TID_RE.test(rkey))
+        return null;
+    return { handleOrDid, rkey };
 }
 /**
  * Turn post text + facets into linkified segments.
@@ -186,7 +231,9 @@ function hrefForFacet(features) {
         if (!isRecord(feature))
             continue;
         if (feature.$type === "app.bsky.richtext.facet#link" && typeof feature.uri === "string") {
-            return feature.uri;
+            // Only http(s) links are kept; anything else (notably `javascript:`)
+            // is dropped, so the segment renders as plain text.
+            return isSafeHttpUrl(feature.uri) ? feature.uri : undefined;
         }
         if (feature.$type === "app.bsky.richtext.facet#mention" && typeof feature.did === "string") {
             return `${BSKY_APP_BASE}/profile/${feature.did}`;
@@ -233,7 +280,7 @@ export function normalizePostView(post) {
         url: postUrl(handle, uri),
         authorHandle: handle,
         authorDisplayName: asString(author.displayName) ?? handle,
-        authorAvatar: asString(author.avatar),
+        authorAvatar: safeHttpUrl(asString(author.avatar)),
         text,
         segments: linkifyText(text, record.facets),
         createdAt,
@@ -291,7 +338,7 @@ function normalizeImages(value) {
             continue;
         const thumb = asString(image.thumb);
         const fullsize = asString(image.fullsize);
-        if (!thumb || !fullsize)
+        if (!isSafeHttpUrl(thumb) || !isSafeHttpUrl(fullsize))
             continue;
         out.push({ thumb, fullsize, alt: asString(image.alt) ?? "" });
     }
@@ -302,13 +349,13 @@ function normalizeExternal(value) {
         return null;
     const uri = asString(value.uri);
     const title = asString(value.title);
-    if (!uri || !title)
+    if (!isSafeHttpUrl(uri) || !title)
         return null;
     return {
         uri,
         title,
         description: asString(value.description) ?? "",
-        thumb: asString(value.thumb),
+        thumb: safeHttpUrl(asString(value.thumb)),
     };
 }
 /**
@@ -338,7 +385,7 @@ function normalizeRecordView(record) {
         url: postUrl(handle, uri),
         authorHandle: handle,
         authorDisplayName: asString(author.displayName) ?? handle,
-        authorAvatar: asString(author.avatar),
+        authorAvatar: safeHttpUrl(asString(author.avatar)),
         text,
         segments: linkifyText(text, value.facets),
         createdAt,

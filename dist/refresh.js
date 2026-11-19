@@ -14,7 +14,7 @@
  *   "include reposts" in settings takes effect without a re-fetch.
  */
 import { BlueskyError, fetchAuthorFeed, fetchPostsByUri, normalizeFeedItem, normalizePostView, parsePostUrl, resolveHandle, } from "./bluesky.js";
-import { CRON_TASK_NAME, FETCH_LIMIT, KV_DID_PREFIX, KV_FEED_KEY, KV_POST_PREFIX, PLUGIN_ID, } from "./constants.js";
+import { CRON_TASK_NAME, DID_CACHE_MAX_AGE_MS, FETCH_LIMIT, KV_DID_PREFIX, KV_FEED_FAILURE_KEY, KV_FEED_KEY, KV_POST_PREFIX, PLUGIN_ID, REFRESH_FAILURE_BACKOFF_MS, } from "./constants.js";
 import { cronExpressionFor, readSettings } from "./settings.js";
 /** Read all settings keys (missing keys fall back to defaults). */
 export async function loadSettings(ctx) {
@@ -57,12 +57,28 @@ export function isCacheStale(cached, settings, now = new Date()) {
         return true;
     return ageMs(cached.fetchedAt, now) > settings.refreshMinutes * 60_000;
 }
+/** True when a feed refresh failed within the backoff window. */
+async function recentlyFailed(ctx, now) {
+    try {
+        const marker = await ctx.kv.get(KV_FEED_FAILURE_KEY);
+        if (!marker || typeof marker.failedAt !== "string")
+            return false;
+        return ageMs(marker.failedAt, now) <= REFRESH_FAILURE_BACKOFF_MS;
+    }
+    catch {
+        return false;
+    }
+}
 async function resolveDid(ctx, fetchImpl, handle) {
     const cacheKey = `${KV_DID_PREFIX}${handle.toLowerCase()}`;
     try {
         const cached = await ctx.kv.get(cacheKey);
         if (cached && typeof cached.did === "string" && cached.did.startsWith("did:")) {
-            return cached.did;
+            // The KV API has no TTL option, so expiry is enforced on read:
+            // entries older than DID_CACHE_MAX_AGE_MS are re-resolved.
+            if (ageMs(cached.resolvedAt, new Date()) <= DID_CACHE_MAX_AGE_MS) {
+                return cached.did;
+            }
         }
     }
     catch {
@@ -137,6 +153,14 @@ export async function refreshFeed(ctx) {
     catch (cause) {
         const message = cause instanceof Error ? cause.message : String(cause);
         ctx.log.error(`[${PLUGIN_ID}] feed refresh failed for ${settings.handle}`, cause);
+        // Record the failure so the inline (foreground) path backs off for
+        // a minute instead of retrying on every page render.
+        try {
+            await ctx.kv.set(KV_FEED_FAILURE_KEY, { failedAt: new Date().toISOString() });
+        }
+        catch {
+            // Best effort; a missing marker just means the next render retries.
+        }
         return { ok: false, reason: "fetch-failed", error: message };
     }
 }
@@ -150,7 +174,7 @@ export async function getFeed(ctx, limit) {
     const settings = await loadSettings(ctx);
     const now = new Date();
     let cached = await readCachedFeed(ctx);
-    if (isCacheStale(cached, settings, now)) {
+    if (isCacheStale(cached, settings, now) && !(await recentlyFailed(ctx, now))) {
         await refreshFeed(ctx);
         cached = await readCachedFeed(ctx);
     }

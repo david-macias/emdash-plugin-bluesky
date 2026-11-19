@@ -103,6 +103,24 @@ describe("linkifyText", () => {
       { text: " world" },
     ]);
   });
+
+  it("drops non-http(s) facet links (e.g. javascript:) to plain text", () => {
+    const text = "click javascript:alert(1) here";
+    const encoder = new TextEncoder();
+    const start = encoder.encode("click ").length;
+    const end = start + encoder.encode("javascript:alert(1)").length;
+    const segments = linkifyText(text, [
+      {
+        index: { byteStart: start, byteEnd: end },
+        features: [{ $type: "app.bsky.richtext.facet#link", uri: "javascript:alert(1)" }],
+      },
+    ]);
+    expect(segments).toEqual([
+      { text: "click " },
+      { text: "javascript:alert(1)" },
+      { text: " here" },
+    ]);
+  });
 });
 
 describe("normalizeFeedItem", () => {
@@ -183,6 +201,54 @@ describe("normalizeFeedItem", () => {
     expect(post!.quote?.text).toBe("the quoted post");
   });
 
+  it("drops non-http(s) URLs from link cards and avatars", () => {
+    const item = {
+      post: {
+        uri: "at://did:plc:me/app.bsky.feed.post/xyz",
+        cid: "bafy2",
+        author: {
+          did: "did:plc:me",
+          handle: "dmacias.bsky.social",
+          displayName: "David Macias",
+          avatar: "javascript:alert(1)",
+        },
+        record: { text: "read this", createdAt: "2026-11-19T10:00:00.000Z" },
+        embed: {
+          $type: "app.bsky.embed.external#view",
+          external: {
+            uri: "javascript:alert(1)",
+            title: "Evil",
+            description: "x",
+          },
+        },
+      },
+    };
+    const post = normalizeFeedItem(item);
+    expect(post!.external).toBeUndefined();
+    expect(post!.authorAvatar).toBeUndefined();
+  });
+
+  it("drops images whose thumb or fullsize is not http(s)", () => {
+    const item = {
+      post: {
+        uri: "at://did:plc:me/app.bsky.feed.post/img",
+        cid: "bafy5",
+        author: { did: "did:plc:me", handle: "dmacias.bsky.social" },
+        record: { text: "pic", createdAt: "2026-11-19T10:00:00.000Z" },
+        embed: {
+          $type: "app.bsky.embed.images#view",
+          images: [
+            { thumb: "javascript:alert(1)", fullsize: "https://cdn.bsky.app/img1", alt: "bad" },
+            { thumb: "https://cdn.bsky.app/thumb2", fullsize: "https://cdn.bsky.app/img2", alt: "good" },
+          ],
+        },
+      },
+    };
+    const post = normalizeFeedItem(item);
+    expect(post!.images).toHaveLength(1);
+    expect(post!.images![0].alt).toBe("good");
+  });
+
   it("ignores video embeds in v1 but keeps the text", () => {
     const item = {
       post: {
@@ -230,13 +296,30 @@ describe("post URLs", () => {
       handleOrDid: "dmacias.bsky.social",
       rkey: "3n2jf3l55g22s",
     });
-    expect(parsePostUrl("https://bsky.app/profile/did:plc:g3qjiemolflzumnrnb6alnhq/post/abc/")).toEqual({
+    expect(parsePostUrl("https://bsky.app/profile/did:plc:g3qjiemolflzumnrnb6alnhq/post/3n2jf3l55g22s/")).toEqual({
       handleOrDid: "did:plc:g3qjiemolflzumnrnb6alnhq",
-      rkey: "abc",
+      rkey: "3n2jf3l55g22s",
     });
     expect(parsePostUrl("https://example.com/profile/x/post/y")).toBeNull();
     expect(parsePostUrl("https://bsky.app/profile/x")).toBeNull();
     expect(parsePostUrl("not a url")).toBeNull();
+  });
+
+  it("rejects malformed post URLs before any network call", () => {
+    // rkey must be a 13-char TID (base32-sortable alphabet)
+    expect(parsePostUrl("https://bsky.app/profile/dmacias.bsky.social/post/abc")).toBeNull();
+    expect(parsePostUrl("https://bsky.app/profile/dmacias.bsky.social/post/3n2jf3l55g22")).toBeNull();
+    expect(parsePostUrl("https://bsky.app/profile/dmacias.bsky.social/post/3n2jf3l55g22sx")).toBeNull();
+    expect(parsePostUrl("https://bsky.app/profile/dmacias.bsky.social/post/3N2JF3L55G22S")).toBeNull();
+    // handle must be a valid domain name or DID
+    expect(parsePostUrl("https://bsky.app/profile/not a handle/post/3n2jf3l55g22s")).toBeNull();
+    expect(parsePostUrl("https://bsky.app/profile/bad_handle!/post/3n2jf3l55g22s")).toBeNull();
+    expect(parsePostUrl("https://bsky.app/profile/did:not-a-did/post/3n2jf3l55g22s")).toBeNull();
+    // valid handle and DID still parse
+    expect(parsePostUrl("https://bsky.app/profile/dmacias.bsky.social/post/3n2jf3l55g22s")).toEqual({
+      handleOrDid: "dmacias.bsky.social",
+      rkey: "3n2jf3l55g22s",
+    });
   });
 });
 
@@ -262,5 +345,15 @@ describe("resolveHandle", () => {
     expect(seen).toHaveLength(1);
     expect(seen[0]).toContain("handle=dmacias.bsky.social");
     expect(seen[0]).not.toContain("%40");
+  });
+
+  it("passes an abort signal (timeout) to the fetch", async () => {
+    let seenInit: RequestInit | undefined;
+    const fetchImpl = async (_url: string, init?: RequestInit) => {
+      seenInit = init;
+      return jsonResponse({ did: "did:plc:test" });
+    };
+    await resolveHandle(fetchImpl, "dmacias.bsky.social");
+    expect(seenInit?.signal).toBeInstanceOf(AbortSignal);
   });
 });

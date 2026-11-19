@@ -117,6 +117,14 @@ TBD — add editor and front-end screenshots here before publishing.
 - The feed shows one account (the configured handle); multi-account feeds are out of scope.
 - `ctx.cron` firing under the Cloudflare runner, the blocks appearing in the editor slash menu, and the Workers Builds deploy are install-time verifications (see the install checklist in the release notes).
 
+## Changelog
+
+- **1.0.5** — Security and robustness: only http(s) URLs are rendered as links, link cards, images, or avatars (a `javascript:` URI from a reposted or quoted post can no longer become a link on your site); the public single-post endpoint rejects malformed handles and post IDs before any network call, and cached handle lookups expire after 7 days; Bluesky requests time out after 3 seconds, and a failed feed refresh backs off for 60 seconds instead of retrying on every page render.
+- **1.0.4** — Single-post feed defaults to below the article.
+- **1.0.3** — Per-page feed positions (home, posts list, single post).
+- **1.0.2** — Configurable feed position (left, right, below).
+- **1.0.1** — Leading `@` in the handle is ignored.
+
 ## License
 
 MIT.
