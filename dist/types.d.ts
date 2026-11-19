@@ -48,6 +48,8 @@ export interface NormalizedPost {
     /** Nested quoted post (one level only; quotes of quotes are not expanded). */
     quote?: NormalizedPost;
 }
+/** Where the homepage feed renders: left sidebar, right sidebar, or below the posts. */
+export type FeedPosition = "left" | "right" | "below";
 /** What the public `feed` route returns (inside the runtime's data envelope). */
 export interface FeedResponse {
     handle: string;
@@ -56,6 +58,8 @@ export interface FeedResponse {
     fetchedAt: string | null;
     /** True when the data is older than the configured refresh interval. */
     stale: boolean;
+    /** The configured homepage position; the template renders from this. */
+    position: FeedPosition;
     posts: NormalizedPost[];
 }
 /** What the public `post` route returns (inside the runtime's data envelope). */

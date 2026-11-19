@@ -11,6 +11,7 @@
  * but the reader stays defensive either way.
  */
 import { FEED_FILTERS, normalizeHandle } from "./bluesky.js";
+export const FEED_POSITIONS = ["left", "right", "below"];
 export const DEFAULT_SETTINGS = {
     handle: "",
     postCount: 5,
@@ -19,6 +20,7 @@ export const DEFAULT_SETTINGS = {
     refreshMinutes: 15,
     showCounts: true,
     showImages: true,
+    position: "right",
 };
 export const SETTINGS_KEYS = Object.keys(DEFAULT_SETTINGS);
 /** The admin settings form, rendered automatically by EmDash (keyed by setting name). */
@@ -75,6 +77,17 @@ export const SETTINGS_SCHEMA = {
         description: "Show images attached to posts.",
         default: DEFAULT_SETTINGS.showImages,
     },
+    position: {
+        type: "select",
+        label: "Feed position",
+        description: "Where the feed appears on the homepage. The template reads this on every render, so changing it takes effect immediately.",
+        options: [
+            { value: "left", label: "Left sidebar" },
+            { value: "right", label: "Right sidebar" },
+            { value: "below", label: "Below the posts" },
+        ],
+        default: DEFAULT_SETTINGS.position,
+    },
 };
 /**
  * Read settings defensively: any missing, null, or wrong-typed value falls
@@ -94,7 +107,11 @@ export function readSettings(raw) {
     const refreshMinutes = clampNumber(source.refreshMinutes, 1, 1440, DEFAULT_SETTINGS.refreshMinutes);
     const showCounts = typeof source.showCounts === "boolean" ? source.showCounts : DEFAULT_SETTINGS.showCounts;
     const showImages = typeof source.showImages === "boolean" ? source.showImages : DEFAULT_SETTINGS.showImages;
-    return { handle, postCount, includeReposts, filter, refreshMinutes, showCounts, showImages };
+    const position = typeof source.position === "string" &&
+        FEED_POSITIONS.includes(source.position)
+        ? source.position
+        : DEFAULT_SETTINGS.position;
+    return { handle, postCount, includeReposts, filter, refreshMinutes, showCounts, showImages, position };
 }
 function clampNumber(value, min, max, fallback) {
     const n = typeof value === "number" && Number.isFinite(value) ? Math.floor(value) : fallback;

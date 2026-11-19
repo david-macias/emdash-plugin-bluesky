@@ -52,7 +52,7 @@ describe("createPlugin / descriptor", () => {
     const d = def();
     const keys = Object.keys(d.admin.settingsSchema);
     expect(keys.sort()).toEqual(
-      ["filter", "handle", "includeReposts", "postCount", "refreshMinutes", "showCounts", "showImages"].sort(),
+      ["filter", "handle", "includeReposts", "position", "postCount", "refreshMinutes", "showCounts", "showImages"].sort(),
     );
     const types = d.admin.portableTextBlocks.map((b: any) => b.type);
     expect(types).toEqual(["bluesky-feed", "bluesky-post"]);

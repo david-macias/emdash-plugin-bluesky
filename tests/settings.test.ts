@@ -11,6 +11,7 @@ describe("readSettings", () => {
       refreshMinutes: 15,
       showCounts: true,
       showImages: true,
+      position: "right",
     });
     expect(readSettings({})).toEqual(readSettings(null));
   });
@@ -33,6 +34,7 @@ describe("readSettings", () => {
       refreshMinutes: 30,
       showCounts: false,
       showImages: false,
+      position: "right",
     });
   });
 
@@ -41,6 +43,14 @@ describe("readSettings", () => {
     expect(readSettings({ handle: "@@dmacias.bsky.social" }).handle).toBe("dmacias.bsky.social");
     expect(readSettings({ handle: "  @dmacias.bsky.social " }).handle).toBe("dmacias.bsky.social");
     expect(readSettings({ handle: "@" }).handle).toBe("");
+  });
+
+  it("defaults the feed position to right and rejects unknown values", () => {
+    expect(readSettings({}).position).toBe("right");
+    expect(readSettings({ position: "left" }).position).toBe("left");
+    expect(readSettings({ position: "below" }).position).toBe("below");
+    expect(readSettings({ position: "top" }).position).toBe("right");
+    expect(readSettings({ position: 42 }).position).toBe("right");
   });
 
   it("clamps numbers and falls back on wrong types or bad filters", () => {

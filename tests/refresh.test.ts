@@ -127,7 +127,26 @@ describe("getFeed (stale-while-revalidate)", () => {
     const feed = await getFeed(ctx, 5);
     expect(feed.stale).toBe(false);
     expect(feed.posts).toHaveLength(1);
+    expect(feed.position).toBe("right");
     expect(ctx.fetchCalls).toHaveLength(0);
+  });
+
+  it("carries the configured feed position in the response", async () => {
+    const cached = {
+      version: 1,
+      handle: HANDLE,
+      did: DID,
+      filter: "posts_no_replies",
+      fetchedAt: new Date().toISOString(),
+      posts: [{ uri: "at://a", text: "a" }],
+    };
+    const ctx = makeCtx({
+      settings: { handle: HANDLE, position: "left" },
+      kv: { "cache:feed": cached },
+      fetchImpl: blueskyFetch(),
+    });
+    const feed = await getFeed(ctx, 5);
+    expect(feed.position).toBe("left");
   });
 
   it("refreshes inline when the cache is stale, then serves the new data", async () => {

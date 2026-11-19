@@ -13,6 +13,9 @@
 
 import type { SettingField } from "emdash";
 import { FEED_FILTERS, normalizeHandle, type FeedFilter } from "./bluesky.js";
+import type { FeedPosition } from "./types.js";
+
+export const FEED_POSITIONS = ["left", "right", "below"] as const;
 
 export interface BlueskySettings {
   /** Bluesky handle to show, e.g. dmacias.bsky.social. Empty = disabled. */
@@ -29,6 +32,8 @@ export interface BlueskySettings {
   showCounts: boolean;
   /** Show attached images on cards. */
   showImages: boolean;
+  /** Where the homepage feed renders (read by the site template). */
+  position: FeedPosition;
 }
 
 export const DEFAULT_SETTINGS: BlueskySettings = {
@@ -39,6 +44,7 @@ export const DEFAULT_SETTINGS: BlueskySettings = {
   refreshMinutes: 15,
   showCounts: true,
   showImages: true,
+  position: "right",
 };
 
 export const SETTINGS_KEYS = Object.keys(DEFAULT_SETTINGS) as (keyof BlueskySettings)[];
@@ -98,6 +104,18 @@ export const SETTINGS_SCHEMA: Record<string, SettingField> = {
     description: "Show images attached to posts.",
     default: DEFAULT_SETTINGS.showImages,
   },
+  position: {
+    type: "select",
+    label: "Feed position",
+    description:
+      "Where the feed appears on the homepage. The template reads this on every render, so changing it takes effect immediately.",
+    options: [
+      { value: "left", label: "Left sidebar" },
+      { value: "right", label: "Right sidebar" },
+      { value: "below", label: "Below the posts" },
+    ],
+    default: DEFAULT_SETTINGS.position,
+  },
 };
 
 /**
@@ -127,7 +145,12 @@ export function readSettings(raw: Record<string, unknown> | null | undefined): B
     typeof source.showCounts === "boolean" ? source.showCounts : DEFAULT_SETTINGS.showCounts;
   const showImages =
     typeof source.showImages === "boolean" ? source.showImages : DEFAULT_SETTINGS.showImages;
-  return { handle, postCount, includeReposts, filter, refreshMinutes, showCounts, showImages };
+  const position =
+    typeof source.position === "string" &&
+    (FEED_POSITIONS as readonly string[]).includes(source.position)
+      ? (source.position as FeedPosition)
+      : DEFAULT_SETTINGS.position;
+  return { handle, postCount, includeReposts, filter, refreshMinutes, showCounts, showImages, position };
 }
 
 function clampNumber(value: unknown, min: number, max: number, fallback: number): number {

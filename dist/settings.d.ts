@@ -12,6 +12,8 @@
  */
 import type { SettingField } from "emdash";
 import { type FeedFilter } from "./bluesky.js";
+import type { FeedPosition } from "./types.js";
+export declare const FEED_POSITIONS: readonly ["left", "right", "below"];
 export interface BlueskySettings {
     /** Bluesky handle to show, e.g. dmacias.bsky.social. Empty = disabled. */
     handle: string;
@@ -27,6 +29,8 @@ export interface BlueskySettings {
     showCounts: boolean;
     /** Show attached images on cards. */
     showImages: boolean;
+    /** Where the homepage feed renders (read by the site template). */
+    position: FeedPosition;
 }
 export declare const DEFAULT_SETTINGS: BlueskySettings;
 export declare const SETTINGS_KEYS: (keyof BlueskySettings)[];
