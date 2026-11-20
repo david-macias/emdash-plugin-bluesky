@@ -2,7 +2,7 @@
 
 Show a Bluesky feed or a single Bluesky post on an [EmDash](https://emdashcms.com) site. Native EmDash plugin, no API key needed: it reads the Bluesky public API (no auth) and caches the result, so a Bluesky outage can never break a page.
 
-> Status: v1.0.3. Built for EmDash 1.5.x. 
+> Status: v1.0.7. Built for EmDash 1.5.x. 
 
 ## Install
 
