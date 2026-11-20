@@ -6,7 +6,8 @@
  */
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
-import { getFeed, getSinglePost, refreshFeed } from "../src/refresh.js";
+import { getFeed, getSinglePost, loadSettings, refreshFeed } from "../src/refresh.js";
+import { readSettings } from "../src/settings.js";
 import { jsonResponse, makeCtx } from "./helpers.js";
 import type { FetchImpl } from "../src/bluesky.js";
 
@@ -308,6 +309,56 @@ describe("getFeed (stale-while-revalidate)", () => {
     const feed = await getFeed(ctx, 5);
     expect(ctx.fetchCalls.some((u) => u.includes("getAuthorFeed"))).toBe(true);
     expect(feed.posts).toHaveLength(5);
+  });
+});
+
+describe("loadSettings (read optimization)", () => {
+  /** Wrap ctx.settings.get with a counter so tests can assert read counts. */
+  function countingCtx(ctx: ReturnType<typeof makeCtx>): { ctx: ReturnType<typeof makeCtx>; gets: () => number } {
+    let n = 0;
+    const baseGet = ctx.settings.get;
+    ctx.settings.get = (async <T,>(key: string): Promise<T | null> => {
+      n++;
+      return baseGet<T>(key);
+    }) as typeof ctx.settings.get;
+    return { ctx, gets: () => n };
+  }
+
+  it("memoizes settings per context: a second load does not re-read the store", async () => {
+    const { ctx, gets } = countingCtx(makeCtx({ settings, fetchImpl: blueskyFetch() }));
+    await loadSettings(ctx);
+    await loadSettings(ctx);
+    // Ten keys, read once — not twenty.
+    expect(gets()).toBe(10);
+  });
+
+  it("getFeed with preloaded settings reads no settings, even when the cache is stale", async () => {
+    const stale = {
+      version: 1,
+      handle: HANDLE,
+      did: DID,
+      filter: "posts_no_replies",
+      fetchedAt: new Date(Date.now() - 60 * 60_000).toISOString(),
+      posts: [],
+    };
+    const { ctx, gets } = countingCtx(
+      makeCtx({ settings, kv: { "cache:feed": stale }, fetchImpl: blueskyFetch() }),
+    );
+    const preloaded = readSettings({ handle: HANDLE });
+    const feed = await getFeed(ctx, 5, preloaded);
+    expect(gets()).toBe(0);
+    expect(feed.stale).toBe(false);
+    expect(feed.posts).toHaveLength(5);
+    expect(ctx.fetchCalls.length).toBeGreaterThan(0);
+  });
+
+  it("refreshFeed with preloaded settings reads no settings", async () => {
+    const { ctx, gets } = countingCtx(makeCtx({ settings, fetchImpl: blueskyFetch() }));
+    const preloaded = readSettings({ handle: HANDLE });
+    const result = await refreshFeed(ctx, preloaded);
+    expect(gets()).toBe(0);
+    expect(result.ok).toBe(true);
+    expect(result.count).toBe(6);
   });
 });
 

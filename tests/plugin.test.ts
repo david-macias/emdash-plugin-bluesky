@@ -32,7 +32,7 @@ describe("createPlugin / descriptor", () => {
   it("returns a definition with the right id, version, capabilities, and hosts", () => {
     const d = def();
     expect(d.id).toBe("emdash-plugin-bluesky");
-    expect(d.version).toBe("1.0.5");
+    expect(d.version).toBe("1.0.7");
     expect(d.capabilities).toEqual(["network:request"]);
     expect(d.allowedHosts).toEqual(["public.api.bsky.app"]);
   });
@@ -63,7 +63,7 @@ describe("createPlugin / descriptor", () => {
   it("blueskyPlugin() returns a native descriptor pointing at this package", () => {
     const descriptor = blueskyPlugin();
     expect(descriptor.id).toBe("emdash-plugin-bluesky");
-    expect(descriptor.version).toBe("1.0.5");
+    expect(descriptor.version).toBe("1.0.7");
     expect(descriptor.format).toBe("native");
     expect(descriptor.entrypoint).toBe("emdash-plugin-bluesky");
     expect(descriptor.componentsEntry).toBe("emdash-plugin-bluesky/astro");

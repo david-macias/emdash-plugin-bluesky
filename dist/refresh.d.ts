@@ -39,7 +39,14 @@ export interface RefreshResult {
     /** Human-readable error detail when not ok. */
     error?: string;
 }
-/** Read all settings keys (missing keys fall back to defaults). */
+/**
+ * Read all settings keys (missing keys fall back to defaults).
+ * The reads run concurrently (Promise.all) instead of one at a time, and
+ * the result is memoized per request context, so the route handler,
+ * getFeed, and refreshFeed share a single read. Settings are per-request
+ * state, so a memo keyed by ctx can never serve a stale admin change;
+ * the entry is dropped with the ctx.
+ */
 export declare function loadSettings(ctx: RefreshContext): Promise<BlueskySettings>;
 export declare function readCachedFeed(ctx: RefreshContext): Promise<CachedFeed | null>;
 /** True when the cache cannot be served as-is for the current settings. */
@@ -49,14 +56,14 @@ export declare function isCacheStale(cached: CachedFeed | null, settings: Bluesk
  * KV. Never throws: every failure is logged and returned as
  * `{ ok: false }`, leaving any existing cache untouched.
  */
-export declare function refreshFeed(ctx: RefreshContext): Promise<RefreshResult>;
+export declare function refreshFeed(ctx: RefreshContext, preloaded?: BlueskySettings): Promise<RefreshResult>;
 /**
  * Read path for the public `feed` route: serve the cache, refreshing inline
  * (stale-while-revalidate) when it is missing or older than the configured
  * interval. On any failure, serve the stale cache; with no cache at all,
  * return an empty feed — never an error.
  */
-export declare function getFeed(ctx: RefreshContext, limit: number): Promise<FeedResponse>;
+export declare function getFeed(ctx: RefreshContext, limit: number, preloaded?: BlueskySettings): Promise<FeedResponse>;
 /**
  * Read path for the public `post` route: resolve a bsky.app post URL to a
  * single normalized post, KV-cached like the feed. Returns `post: null`

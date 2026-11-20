@@ -36,7 +36,7 @@ import {
   PLUGIN_ID,
   REFRESH_FAILURE_BACKOFF_MS,
 } from "./constants.js";
-import { cronExpressionFor, readSettings, type BlueskySettings } from "./settings.js";
+import { cronExpressionFor, readSettings, SETTINGS_KEYS, type BlueskySettings } from "./settings.js";
 import type { CachedDid, CachedFeed, CachedPost, FeedResponse, SinglePostResponse } from "./types.js";
 
 /** The slice of PluginContext the refresh engine needs (easy to mock). */
@@ -64,16 +64,44 @@ export interface RefreshResult {
   error?: string;
 }
 
-/** Read all settings keys (missing keys fall back to defaults). */
+/** Per-request memo of resolved settings, keyed by the request context. */
+const settingsMemo = new WeakMap<object, Promise<BlueskySettings>>();
+
+/**
+ * Read all settings keys (missing keys fall back to defaults).
+ * The reads run concurrently (Promise.all) instead of one at a time, and
+ * the result is memoized per request context, so the route handler,
+ * getFeed, and refreshFeed share a single read. Settings are per-request
+ * state, so a memo keyed by ctx can never serve a stale admin change;
+ * the entry is dropped with the ctx.
+ */
 export async function loadSettings(ctx: RefreshContext): Promise<BlueskySettings> {
+  const cached = settingsMemo.get(ctx);
+  if (cached) return cached;
+  const promise = loadSettingsUncached(ctx);
+  settingsMemo.set(ctx, promise);
+  // If the read ever rejects, drop the memo entry so a retry can re-read.
+  promise.catch(() => {
+    if (settingsMemo.get(ctx) === promise) settingsMemo.delete(ctx);
+  });
+  return promise;
+}
+
+/** The actual read: all keys fetched concurrently, then defaults applied. */
+async function loadSettingsUncached(ctx: RefreshContext): Promise<BlueskySettings> {
+  const values = await Promise.all(
+    SETTINGS_KEYS.map(async (key) => {
+      try {
+        return await ctx.settings.get(key);
+      } catch {
+        return null;
+      }
+    }),
+  );
   const raw: Record<string, unknown> = {};
-  for (const key of ["handle", "postCount", "includeReposts", "filter", "refreshMinutes", "showCounts", "showImages", "position", "postsPosition", "postPosition"]) {
-    try {
-      raw[key] = await ctx.settings.get(key);
-    } catch {
-      raw[key] = null;
-    }
-  }
+  SETTINGS_KEYS.forEach((key, i) => {
+    raw[key] = values[i];
+  });
   return readSettings(raw);
 }
 
@@ -145,8 +173,11 @@ async function resolveDid(ctx: RefreshContext, fetchImpl: FetchImpl, handle: str
  * KV. Never throws: every failure is logged and returned as
  * `{ ok: false }`, leaving any existing cache untouched.
  */
-export async function refreshFeed(ctx: RefreshContext): Promise<RefreshResult> {
-  const settings = await loadSettings(ctx);
+export async function refreshFeed(
+  ctx: RefreshContext,
+  preloaded?: BlueskySettings,
+): Promise<RefreshResult> {
+  const settings = preloaded ?? (await loadSettings(ctx));
   if (!settings.handle) {
     return { ok: false, reason: "no-handle", error: "No Bluesky handle configured." };
   }
@@ -213,13 +244,17 @@ export async function refreshFeed(ctx: RefreshContext): Promise<RefreshResult> {
  * interval. On any failure, serve the stale cache; with no cache at all,
  * return an empty feed — never an error.
  */
-export async function getFeed(ctx: RefreshContext, limit: number): Promise<FeedResponse> {
-  const settings = await loadSettings(ctx);
+export async function getFeed(
+  ctx: RefreshContext,
+  limit: number,
+  preloaded?: BlueskySettings,
+): Promise<FeedResponse> {
+  const settings = preloaded ?? (await loadSettings(ctx));
   const now = new Date();
   let cached = await readCachedFeed(ctx);
 
   if (isCacheStale(cached, settings, now) && !(await recentlyFailed(ctx, now))) {
-    await refreshFeed(ctx);
+    await refreshFeed(ctx, settings);
     cached = await readCachedFeed(ctx);
   }
 

@@ -22,7 +22,7 @@ export const DEFAULT_SETTINGS = {
     showImages: true,
     position: "right",
     postsPosition: "below",
-    postPosition: "right",
+    postPosition: "below",
 };
 export const SETTINGS_KEYS = Object.keys(DEFAULT_SETTINGS);
 /** The admin settings form, rendered automatically by EmDash (keyed by setting name). */

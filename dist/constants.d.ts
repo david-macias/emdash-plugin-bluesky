@@ -6,7 +6,7 @@
 /** Plugin id. Must match the package name and the definePlugin id. */
 export declare const PLUGIN_ID = "emdash-plugin-bluesky";
 /** Plugin version (semver). Bumped on every release. */
-export declare const PLUGIN_VERSION = "1.0.5";
+export declare const PLUGIN_VERSION = "1.0.7";
 /** Bluesky public API base (no auth required). */
 export declare const BLUESKY_API_BASE = "https://public.api.bsky.app/xrpc";
 /** bsky.app base for profile / post links. */

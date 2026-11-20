@@ -88,7 +88,7 @@ export function buildPluginDefinition() {
                 handler: async (ctx) => {
                     const settings = await loadSettings(ctx);
                     const limit = limitFromInput(ctx.input, settings.postCount);
-                    return getFeed(ctx, limit);
+                    return getFeed(ctx, limit, settings);
                 },
             },
             /**

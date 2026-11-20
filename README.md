@@ -122,6 +122,7 @@ The unit tests run against a small `definePlugin` stub (the real `emdash` entry 
 
 ## Changelog
 
+- **1.0.7** — Performance: settings are read once per request instead of up to six times (the feed route loaded them twice per call, and the page calls the route twice), and the ten settings keys are fetched in parallel instead of one at a time.
 - **1.0.6** — Added screenshots to README.
 - **1.0.5** — Security and robustness: only http(s) URLs are rendered as links, link cards, images, or avatars (a `javascript:` URI from a reposted or quoted post can no longer become a link on your site); the public single-post endpoint rejects malformed handles and post IDs before any network call, and cached handle lookups expire after 7 days; Bluesky requests time out after 3 seconds, and a failed feed refresh backs off for 60 seconds instead of retrying on every page render.
 - **1.0.4** — Single-post feed defaults to below the article.
