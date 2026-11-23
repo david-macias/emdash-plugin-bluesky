@@ -2,7 +2,7 @@
 
 Show a Bluesky feed or a single Bluesky post on an [EmDash](https://emdashcms.com) site. Native EmDash plugin, no API key needed: it reads the Bluesky public API (no auth) and caches the result, so a Bluesky outage can never break a page.
 
-> Status: v1.0.3. Built for EmDash 1.5.x. 
+> Status: v1.0.9. Built for EmDash 1.5.x and 1.6.x.
 
 ## Install
 
@@ -101,7 +101,7 @@ npm test          # unit tests (mocked fetch; 41 tests)
 npm run test:live # live Bluesky API check (no auth; needs network)
 npm run typecheck # tsc --noEmit
 npm run build     # tsc -> dist/
-npm run smoke     # built-package check against the real EmDash 1.5.0 rules
+npm run smoke     # built-package check against the real EmDash 1.6.0 rules
 ```
 
 The unit tests run against a small `definePlugin` stub (the real `emdash` entry cannot be imported in plain node: it imports `cloudflare:workers` and `astro:content`). `npm run smoke` loads the built package with `emdash` stubbed and validates the definition against the real id/version regexes from `define-plugin.ts` and the real `PLUGIN_CAPABILITIES` list from `@emdash-cms/plugin-types`.
@@ -122,6 +122,7 @@ The unit tests run against a small `definePlugin` stub (the real `emdash` entry 
 
 ## Changelog
 
+- **1.0.9** — README: the status line at the top now says v1.0.9 and EmDash 1.5.x and 1.6.x (it had been stuck at v1.0.3 since 1.0.3). No code changes.
 - **1.0.8** — EmDash 1.6 support: the peer range is now `1.5.x || 1.6.x`, and the development dependency is EmDash 1.6.0. No code changes; the plugin uses the same APIs on both versions.
 - **1.0.7** — Performance: settings are read once per request instead of up to six times (the feed route loaded them twice per call, and the page calls the route twice), and the ten settings keys are fetched in parallel instead of one at a time.
 - **1.0.6** — Added screenshots to README.
