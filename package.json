@@ -1,6 +1,6 @@
 {
   "name": "emdash-plugin-bluesky",
-  "version": "1.0.7",
+  "version": "1.0.8",
   "description": "Show a Bluesky feed or a single Bluesky post on an EmDash site. Native EmDash plugin, no API key needed.",
   "type": "module",
   "license": "MIT",
@@ -51,11 +51,11 @@
     "smoke": "node scripts/smoke.mjs"
   },
   "peerDependencies": {
-    "emdash": "1.5.x"
+    "emdash": "1.5.x || 1.6.x"
   },
   "devDependencies": {
     "@types/node": "^24.0.0",
-    "emdash": "1.5.0",
+    "emdash": "1.6.0",
     "typescript": "^5.9.0",
     "vitest": "^4.0.0"
   }
